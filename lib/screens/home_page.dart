@@ -61,7 +61,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _gifs.addAll(
           (gifs ?? new List<GifContainer>())
-              .getRange(totalNbGifs - nbGifsToAdd - 1, totalNbGifs - 1),
+              .getRange(totalNbGifs - nbGifsToAdd, totalNbGifs - 1),
         );
         _isAddMoreGifLoading = false;
       });
