@@ -5,14 +5,12 @@ import 'package:tp_giphy/util/transitions.dart';
 
 import 'gif.dart';
 
-/**
- * Un GifContainer contient un Gif original, un Gif basse qualité et un Gif basse qualité figé.
- * 
- * L'HomePage va afficher une liste de GifContainer qui eux même vont afficher un GIF basse qualité (figé ou en mouvement).
- * 
- * Lors du clic sur un GifContainer, ça va lancer une page qui va afficher le GIF orginal.
- */
 class GifContainer extends StatefulWidget {
+  /// Un GifContainer contient un Gif original, un Gif basse qualité et un Gif basse qualité figé.
+  ///
+  /// L'HomePage va afficher une liste de GifContainer qui eux même vont afficher un GIF basse qualité (figé ou en mouvement).
+  ///
+  /// Lors du clic sur un GifContainer, ça va lancer une page qui va afficher le GIF orginal.
   const GifContainer({
     @required this.key,
     this.id,
@@ -24,11 +22,9 @@ class GifContainer extends StatefulWidget {
     this.urlToShare,
   });
 
-  /**
-   * Cette clé me permet d'accéder à l'état du Widget en dehors de la classe
-   * 
-   * Grâce à ça je peux notifier depuis l'HomePage chaque GifContainer pour leur dire d'afficher un GIF figé ou un GIF en mouvement.
-   */
+  /// Cette clé me permet d'accéder à l'état du Widget en dehors de la classe
+  ///
+  /// Grâce à ça je peux notifier depuis l'HomePage chaque GifContainer pour leur dire d'afficher un GIF figé ou un GIF en mouvement.
   final GlobalKey<_GifContainerState> key;
   final int id;
   final String gifId;

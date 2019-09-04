@@ -3,20 +3,18 @@ import 'package:flutter/material.dart';
 class Gif extends StatefulWidget {
   const Gif({this.key, this.url}) : super(key: key);
 
-  /**
-   * Cette clé a une utilisation bien différente de celle du GifContainer.
-
-   * Elle permet à Flutter de différencier 2 instances de Gif lors du setState() du parent GifContainer.
-   *
-   * Lorsque je demande au GifContainer de passer d'un GIF figé à un GIF en mouvement, à l'exécution du setState() du GifContainer, Flutter va
-   *comparer le précédent Widget tree au nouveau Widget tree..
-   *
-   * Il va voir que je remplace un Gif par un autre Gif.
-   *Si une clé de Gif est spécifiée, il va comparer les clés et va voir que ce n'est pas le même Widget.
-   *Sinon il va juste comparer le type et voir que le widget est toujours le même et va laisser le GIF figé.
-   * 
-   * Explication par Google : https://www.youtube.com/watch?v=kn0EOS-ZiIc
-   */
+  /// Cette clé a une utilisation bien différente de celle du GifContainer.
+  ///
+  /// Elle permet à Flutter de différencier 2 instances de Gif lors du setState() du parent GifContainer.
+  ///
+  /// Lorsque je demande au GifContainer de passer d'un GIF figé à un GIF en mouvement, à l'exécution du setState() du GifContainer, Flutter va
+  ///comparer le précédent Widget tree au nouveau Widget tree..
+  ///
+  /// Il va voir que je remplace un Gif par un autre Gif.
+  ///Si une clé de Gif est spécifiée, il va comparer les clés et va voir que ce n'est pas le même Widget.
+  ///Sinon il va juste comparer le type et voir que le widget est toujours le même et va laisser le GIF figé.
+  ///
+  /// Explication par Google : https://www.youtube.com/watch?v=kn0EOS-ZiIc
   final GlobalKey<GifState> key;
   final String url;
 

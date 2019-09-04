@@ -19,9 +19,15 @@ class _HomePageState extends State<HomePage> {
   final String _trendUrl = "http://api.giphy.com/v1/gifs/trending?";
   final String _searchUrl = "http://api.giphy.com/v1/gifs/search?";
   final String _apiKey = "hlRdW2NUBPJn01Vr1Fcw6oshlVWwKbGt";
+  final String PREFS_PROP = "Is App Opened For The First Time?";
+
   final TextEditingController _textFieldController =
       new TextEditingController();
-  final String prefsProp = "IsAppOpenedForTheFirstTime?";
+  final ScrollController _scrollController = new ScrollController();
+  final KeyboardVisibilityNotification _keyboardVisibilityNotification =
+      KeyboardVisibilityNotification();
+
+  int _gifsCount = 0;
 
   //Paramètres de la requête HTTP
   String _url;
@@ -30,14 +36,14 @@ class _HomePageState extends State<HomePage> {
   String _searchedText = "";
   String _tappingText = "";
 
-  //GIF figé ? true : false
+  //True si la le GIF doit être figé sinon False
   bool _isStill = true;
-  //True si la requête d'ajout des GIFs suivant est en cours sinon false
+  //True si la requête d'ajout des GIFs suivant est en cours sinon False
   bool _isAddMoreGifLoading = false;
-  //True si la requête de recherche de GIF est en cours sinon false
+  //True si la requête de recherche de GIF est en cours sinon False
   bool _isSearchRequestLoading = false;
   //True si la recherche a été validé via le bouton "enter" du clavier,
-  //False si l'utilisateur fait un return
+  //False si l'utilisateur fait une action de retour
   bool _isSearchSubmitted = false;
 
   //Requête de recherche de GIFs
@@ -55,14 +61,16 @@ class _HomePageState extends State<HomePage> {
 
   //Requête d'ajouts des GIFs suivants
   void addMoreGifs(int nbGifsToAdd) async {
-    int totalNbGifs = _gifs.length + nbGifsToAdd;
     setState(() => _isAddMoreGifLoading = true);
+
+    int totalNbGifs = _gifs.length + nbGifsToAdd;
     return await getSearchedGifs(nbGifs: totalNbGifs).then((gifs) {
       setState(() {
-        _gifs.addAll(
-          (gifs ?? new List<GifContainer>())
-              .getRange(totalNbGifs - nbGifsToAdd, totalNbGifs - 1),
-        );
+        int start = totalNbGifs - nbGifsToAdd;
+        int end = gifs.length;
+        if (gifs != null) {
+          _gifs.addAll(gifs.getRange(start < 0 ? 0 : start, end));
+        }
         _isAddMoreGifLoading = false;
       });
     });
@@ -84,7 +92,6 @@ class _HomePageState extends State<HomePage> {
       ok = true;
     }
     if (ok) {
-      print(_url);
       return await getGifsFromServer();
     } else
       return null;
@@ -104,16 +111,22 @@ class _HomePageState extends State<HomePage> {
       List<dynamic> gifsFromJSON = jsonResponse['data'];
       gifsFromJSON.forEach((gif) {
         gifs.add(
+          //Lire les commentaires de chaque
           new GifContainer(
             key: GlobalKey(),
             id: increment++,
-            originalGif:
-                Gif(key: GlobalKey(), url: gif["images"]["original"]["url"]),
-            mediumMovingGif:
-                Gif(key: GlobalKey(), url: gif["images"]["fixed_width"]["url"]),
-            mediumStillGif: Gif(
-                key: GlobalKey(),
-                url: gif["images"]["fixed_width_still"]["url"]),
+            originalGif: new Gif(
+              key: GlobalKey(),
+              url: gif["images"]["original"]["url"],
+            ),
+            mediumMovingGif: new Gif(
+              key: GlobalKey(),
+              url: gif["images"]["fixed_width"]["url"],
+            ),
+            mediumStillGif: new Gif(
+              key: GlobalKey(),
+              url: gif["images"]["fixed_width_still"]["url"],
+            ),
             urlToShare: "https://media.giphy.com/media/${gif["id"]}/giphy.gif",
             isStill: _isStill,
           ),
@@ -179,29 +192,70 @@ class _HomePageState extends State<HomePage> {
           );
   }
 
+  /**
+  * Si la recherche n'a pas été demandé après avoir selectionné le textfield..
+  * Cette méthode remet la recherche actuelle et enlève le focus sur le TextField.
+  */
+  void keyboardVisibilityOnHideListener() {
+    if (!_isSearchSubmitted) {
+      setState(() {
+        _textFieldController.text = _searchedText;
+        _tappingText = _searchedText;
+        FocusScope.of(context).requestFocus(new FocusNode());
+      });
+    }
+  }
+
+  /**
+   * Si l'utilisateur arrive à la fin de la ScrollView..
+   * Cette méthode ajoute d'autres GIFs à la liste.
+   */
+  void scrollControllerListener() {
+    if (_scrollController.offset >=
+            _scrollController.position.maxScrollExtent &&
+        !_scrollController.position.outOfRange &&
+        !_isAddMoreGifLoading) {
+      setState(() {
+        addMoreGifs(10);
+      });
+    }
+  }
+
+  @override
+  void setState(fn) {
+    super.setState(fn);
+    _gifsCount = _gifs.length;
+  }
+
   @override
   void initState() {
     super.initState();
+
     search();
-    //Listener sur la fermeture du clavier pour remettre la recherche actuelle et enlever le focus sur le TextField.
-    KeyboardVisibilityNotification().addNewListener(onHide: () {
-      if (!_isSearchSubmitted) {
-        setState(() {
-          _textFieldController.text = _searchedText;
-          _tappingText = _searchedText;
-          FocusScope.of(context).requestFocus(new FocusNode());
-        });
-      }
-    });
 
     //Show les tips si c'est la première fois que l'application s'ouvre
     SharedPreferences.getInstance().then((prefs) {
-      bool isFirstTime = !prefs.containsKey(prefsProp);
+      bool isFirstTime = !prefs.containsKey(PREFS_PROP);
       if (isFirstTime) {
-        prefs.setBool(prefsProp, true);
+        prefs.setBool(PREFS_PROP, true);
         Navigator.of(context).push(FadeRoute(page: PopupTipsPage()));
       }
     });
+
+    //Listener sur la fermeture du clavier
+    _keyboardVisibilityNotification.addNewListener(
+        onHide: keyboardVisibilityOnHideListener);
+
+    //Listener sur le controller de la ScrollView
+    _scrollController.addListener(scrollControllerListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(scrollControllerListener);
+    _keyboardVisibilityNotification.removeListener(0);
+
+    super.dispose();
   }
 
   @override
@@ -237,6 +291,17 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: Colors.transparent,
             title: Text("GIPHY"),
             centerTitle: true,
+            leading: Container(
+              padding: EdgeInsets.only(left: 15),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _gifsCount.toString(),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20.0,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
             actions: <Widget>[
               IconButton(
                 icon: Icon(Icons.help),
@@ -286,6 +351,7 @@ class _HomePageState extends State<HomePage> {
                 child: RefreshIndicator(
                   onRefresh: () => _handledRefresh(),
                   child: SingleChildScrollView(
+                    controller: _scrollController,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
